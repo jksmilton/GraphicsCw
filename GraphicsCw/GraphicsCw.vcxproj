@@ -10,6 +10,13 @@
       <Platform>Win32</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="graphics.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="gcw.frag" />
+    <None Include="gcw.vert" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{18581697-06A3-47D8-96EC-7959BEF2ADB2}</ProjectGuid>
     <RootNamespace>GraphicsCw</RootNamespace>
