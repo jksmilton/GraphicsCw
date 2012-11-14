@@ -26,5 +26,8 @@
     <None Include="gcw.vert">
       <Filter>Source Files</Filter>
     </None>
+    <None Include="shaded.frag">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

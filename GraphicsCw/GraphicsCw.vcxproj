@@ -16,6 +16,7 @@
   <ItemGroup>
     <None Include="gcw.frag" />
     <None Include="gcw.vert" />
+    <None Include="shaded.frag" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{18581697-06A3-47D8-96EC-7959BEF2ADB2}</ProjectGuid>
