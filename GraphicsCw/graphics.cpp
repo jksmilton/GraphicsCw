@@ -2,7 +2,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 #include <GL/glew.h>
-#include <GL/glfw.h>
+#include <glfw.h>
 #include <stdlib.h>
 #include <vector>
 #include <glm/glm.hpp>
