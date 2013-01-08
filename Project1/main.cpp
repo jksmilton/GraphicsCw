@@ -10,11 +10,61 @@
 #include <cstring>
 #include <cstdio>
 using namespace std;
+
+glm::mat4 View, Projection, MVP;
+
 class drawable{
+private:
+	GLuint textureID;
+	
+	vector<glm::vec3> vVecs;
+	vector<glm::vec2> vtVecs;
+	vector<glm::vec3> nVecs;
+	glm::mat4 Model;
+	GLuint vao[1], vbo[3];
 public:
 	drawable(){}
-	virtual void init(vector<glm::vec3> vertices, vector<glm::vec3> normals, vector<glm::vec2> uvs) = 0;
-	virtual void draw(GLulong time) = 0;
+	void init(vector<glm::vec3> vertices, vector<glm::vec3> normals, vector<glm::vec2> uvs) {
+		setTexture();
+		vVecs = vertices;
+		vtVecs = uvs;
+		nVecs = normals;
+
+
+		Model = glm::mat4(1.f);
+
+		glGenBuffers(3, vbo);
+		glGenVertexArrays(1, vao);
+
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+		glBufferData(GL_ARRAY_BUFFER, vVecs.size() * sizeof(glm::vec3), &vVecs[0], GL_STATIC_DRAW);
+		glBindVertexArray(vao[0]);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
+		
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+		glBufferData(GL_ARRAY_BUFFER, vtVecs.size() * sizeof(glm::vec2), &vtVecs[0], GL_STATIC_DRAW);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (const GLvoid*)0);
+
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
+		glBufferData(GL_ARRAY_BUFFER, nVecs.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW); 
+		glEnableVertexAttribArray(2);
+		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
+
+	}
+	virtual void setTexture() = 0;
+	virtual void animate(GLulong) = 0;
+	
+	void draw(GLulong time) {
+
+		MVP = Projection * View * Model;
+		glUniformMatrix4fv(ObjectMatrixID, 1, GL_FALSE, &MVP[0][0]);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		glBindTexture(GL_TEXTURE_2D, textureID);
+		glBindVertexArray(vao[0]);
+		glDrawArrays(GL_TRIANGLES, 0, vVecs.size());
+	}
 };
 struct textureMaps{
 	char * name;
@@ -24,7 +74,7 @@ struct textureMaps{
 textureMaps * textureMappings = (textureMaps*) malloc(14* sizeof(textureMaps));
 GLuint defaultShader;
 vector<drawable*>  objects;
-glm::mat4 View, Projection, MVP;
+
 GLuint ObjectMatrixID;
 
 GLuint lookupTexture(char * name){
@@ -129,1026 +179,212 @@ char* fileToBuf(char* file) { //reads a file into an allocated buffer
 
 class solarPane : public drawable {
 
-private:
-	GLuint textureID;
-	
-	vector<glm::vec3> vVecs;
-	vector<glm::vec2> vtVecs;
-	vector<glm::vec3> nVecs;
-	glm::mat4 Model;
-	GLuint vao[1], vbo[3];
 public:
-	void init(vector<glm::vec3> vertices, vector<glm::vec3> normals, vector<glm::vec2> uvs){
-		vVecs = vertices;
-		vtVecs = uvs;
-		nVecs = normals;
+	void setTexture(){
 
 		textureID = lookupTexture("solar-panel");
 
-		Model = glm::mat4(1.f);
-
-		glGenBuffers(3, vbo);
-		glGenVertexArrays(1, vao);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-		glBufferData(GL_ARRAY_BUFFER, vVecs.size() * sizeof(glm::vec3), &vVecs[0], GL_STATIC_DRAW);
-		glBindVertexArray(vao[0]);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
-		
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-		glBufferData(GL_ARRAY_BUFFER, vtVecs.size() * sizeof(glm::vec2), &vtVecs[0], GL_STATIC_DRAW);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (const GLvoid*)0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
-		glBufferData(GL_ARRAY_BUFFER, nVecs.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW); 
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
-
 	}
 
-	void draw(GLulong time){
-
-		MVP = Projection * View * Model;
-		glUniformMatrix4fv(ObjectMatrixID, 1, GL_FALSE, &MVP[0][0]);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glBindVertexArray(vao[0]);
-		glDrawArrays(GL_TRIANGLES, 0, vVecs.size());
-
-	}
+	void animate(){}
 
 };
 class solarBase : public drawable {
 
-private:
-	GLuint textureID;
-	vector<glm::vec3> vVecs;
-	vector<glm::vec2> vtVecs;
-	vector<glm::vec3> nVecs;
-	glm::mat4 Model;
-	GLuint vao[1], vbo[3];
 public:
-	void init(vector<glm::vec3> vertices, vector<glm::vec3> normals, vector<glm::vec2> uvs){
-		vVecs = vertices;
-		vtVecs = uvs;
-		nVecs = normals;
-
-		textureID = lookupTexture("concrete-bare");
-		Model = glm::mat4(1.f);
-
-		glGenBuffers(3, vbo);
-		glGenVertexArrays(1, vao);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-		glBufferData(GL_ARRAY_BUFFER, vVecs.size() * sizeof(glm::vec3), &vVecs[0], GL_STATIC_DRAW);
-		glBindVertexArray(vao[0]);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
+	void setTexture(){
 		
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-		glBufferData(GL_ARRAY_BUFFER, vtVecs.size() * sizeof(glm::vec2), &vtVecs[0], GL_STATIC_DRAW);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (const GLvoid*)0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
-		glBufferData(GL_ARRAY_BUFFER, nVecs.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW); 
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
+		textureID = lookupTexture("concrete-bare");
+		
 	}
-
-	void draw(GLulong time){
-
-		MVP = Projection * View * Model;
-		glUniformMatrix4fv(ObjectMatrixID, 1, GL_FALSE, &MVP[0][0]);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glBindVertexArray(vao[0]);
-		glDrawArrays(GL_TRIANGLES, 0, vVecs.size());
-
-	}
-
+	void animate(){}
 };
 class observatoryTop : public drawable {
-
-private:
-	GLuint textureID;
-	vector<glm::vec3> vVecs;
-	vector<glm::vec2> vtVecs;
-	vector<glm::vec3> nVecs;
-	glm::mat4 Model;
-	GLuint vao[1], vbo[3];
-
 public:
-	void init(vector<glm::vec3> vertices, vector<glm::vec3> normals, vector<glm::vec2> uvs){
-		vVecs = vertices;
-		vtVecs = uvs;
-		nVecs = normals;
-
-		textureID = lookupTexture("window-blocks");
-		Model = glm::mat4(1.f);
-
-		glGenBuffers(3, vbo);
-		glGenVertexArrays(1, vao);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-		glBufferData(GL_ARRAY_BUFFER, vVecs.size() * sizeof(glm::vec3), &vVecs[0], GL_STATIC_DRAW);
-		glBindVertexArray(vao[0]);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
+	void setTexture(){
 		
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-		glBufferData(GL_ARRAY_BUFFER, vtVecs.size() * sizeof(glm::vec2), &vtVecs[0], GL_STATIC_DRAW);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (const GLvoid*)0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
-		glBufferData(GL_ARRAY_BUFFER, nVecs.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW); 
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
+		textureID = lookupTexture("window-blocks");
+		
 	}
-
-	void draw(GLulong time){
-
-		MVP = Projection * View * Model;
-		glUniformMatrix4fv(ObjectMatrixID, 1, GL_FALSE, &MVP[0][0]);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glBindVertexArray(vao[0]);
-		glDrawArrays(GL_TRIANGLES, 0, vVecs.size());
-
-	}
-
+	void animate(){}
 };
 
 class observatoryBase : public drawable {
-
-private:
-	GLuint textureID;
-	vector<glm::vec3> vVecs;
-	vector<glm::vec2> vtVecs;
-	vector<glm::vec3> nVecs;
-	glm::mat4 Model;
-	GLuint vao[1], vbo[3];
-
 public:
-	void init(vector<glm::vec3> vertices, vector<glm::vec3> normals, vector<glm::vec2> uvs){
-		vVecs = vertices;
-		vtVecs = uvs;
-		nVecs = normals;
-
+	void setTexture(){
 		textureID = lookupTexture("scratch-metal");
-		Model = glm::mat4(1.f);
-
-		glGenBuffers(3, vbo);
-		glGenVertexArrays(1, vao);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-		glBufferData(GL_ARRAY_BUFFER, vVecs.size() * sizeof(glm::vec3), &vVecs[0], GL_STATIC_DRAW);
-		glBindVertexArray(vao[0]);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
 		
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-		glBufferData(GL_ARRAY_BUFFER, vtVecs.size() * sizeof(glm::vec2), &vtVecs[0], GL_STATIC_DRAW);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (const GLvoid*)0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
-		glBufferData(GL_ARRAY_BUFFER, nVecs.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW); 
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
 	}
-
-	void draw(GLulong time){
-
-		MVP = Projection * View * Model;
-		glUniformMatrix4fv(ObjectMatrixID, 1, GL_FALSE, &MVP[0][0]);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glBindVertexArray(vao[0]);
-		glDrawArrays(GL_TRIANGLES, 0, vVecs.size());
-
-	}
+	void animate(){}
 
 };
 
 class landscape : public drawable {
 
-private:
-	GLuint textureID;
-	vector<glm::vec3> vVecs;
-	vector<glm::vec2> vtVecs;
-	vector<glm::vec3> nVecs;
-	glm::mat4 Model;
-	GLuint vao[1], vbo[3];
-
 public:
-	void init(vector<glm::vec3> vertices, vector<glm::vec3> normals, vector<glm::vec2> uvs){
-		vVecs = vertices;
-		vtVecs = uvs;
-		nVecs = normals;
-
-		textureID = lookupTexture("sand");
-		Model = glm::mat4(1.f);
-
-		glGenBuffers(3, vbo);
-		glGenVertexArrays(1, vao);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-		glBufferData(GL_ARRAY_BUFFER, vVecs.size() * sizeof(glm::vec3), &vVecs[0], GL_STATIC_DRAW);
-		glBindVertexArray(vao[0]);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
+	void setTexture(){
 		
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-		glBufferData(GL_ARRAY_BUFFER, vtVecs.size() * sizeof(glm::vec2), &vtVecs[0], GL_STATIC_DRAW);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (const GLvoid*)0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
-		glBufferData(GL_ARRAY_BUFFER, nVecs.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW); 
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
+		textureID = lookupTexture("sand");
+		
 	}
-
-	void draw(GLulong time){
-
-		MVP = Projection * View * Model;
-		glUniformMatrix4fv(ObjectMatrixID, 1, GL_FALSE, &MVP[0][0]);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glBindVertexArray(vao[0]);
-		glDrawArrays(GL_TRIANGLES, 0, vVecs.size());
-
-	}
-
+	void animate(){}
 };
 
 class path : public drawable {
 
-private:
-	GLuint textureID;
-	vector<glm::vec3> vVecs;
-	vector<glm::vec2> vtVecs;
-	vector<glm::vec3> nVecs;
-	glm::mat4 Model;
-	GLuint vao[1], vbo[3];
 public:
-	void init(vector<glm::vec3> vertices, vector<glm::vec3> normals, vector<glm::vec2> uvs){
-		vVecs = vertices;
-		vtVecs = uvs;
-		nVecs = normals;
-
-		textureID = lookupTexture("odd-glass");
-		Model = glm::mat4(1.f);
-
-		glGenBuffers(3, vbo);
-		glGenVertexArrays(1, vao);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-		glBufferData(GL_ARRAY_BUFFER, vVecs.size() * sizeof(glm::vec3), &vVecs[0], GL_STATIC_DRAW);
-		glBindVertexArray(vao[0]);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
+	void setTexture(){
 		
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-		glBufferData(GL_ARRAY_BUFFER, vtVecs.size() * sizeof(glm::vec2), &vtVecs[0], GL_STATIC_DRAW);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (const GLvoid*)0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
-		glBufferData(GL_ARRAY_BUFFER, nVecs.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW); 
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
+		textureID = lookupTexture("odd-glass");
+		
 	}
-
-	void draw(GLulong time){
-
-		MVP = Projection * View * Model;
-		glUniformMatrix4fv(ObjectMatrixID, 1, GL_FALSE, &MVP[0][0]);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glBindVertexArray(vao[0]);
-		glDrawArrays(GL_TRIANGLES, 0, vVecs.size());
-
-	}
-
+	void animate(){}
 };
 
 class livingquarters : public drawable {
-
-private:
-	GLuint textureID;
-	vector<glm::vec3> vVecs;
-	vector<glm::vec2> vtVecs;
-	vector<glm::vec3> nVecs;
-	glm::mat4 Model;
-	GLuint vao[1], vbo[3];
 public:
-	void init(vector<glm::vec3> vertices, vector<glm::vec3> normals, vector<glm::vec2> uvs){
-		vVecs = vertices;
-		vtVecs = uvs;
-		nVecs = normals;
-
-		textureID = lookupTexture("concrete-bare");
-		Model = glm::mat4(1.f);
-
-		glGenBuffers(3, vbo);
-		glGenVertexArrays(1, vao);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-		glBufferData(GL_ARRAY_BUFFER, vVecs.size() * sizeof(glm::vec3), &vVecs[0], GL_STATIC_DRAW);
-		glBindVertexArray(vao[0]);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
+	void setTexture(){
 		
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-		glBufferData(GL_ARRAY_BUFFER, vtVecs.size() * sizeof(glm::vec2), &vtVecs[0], GL_STATIC_DRAW);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (const GLvoid*)0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
-		glBufferData(GL_ARRAY_BUFFER, nVecs.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW); 
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
+		textureID = lookupTexture("concrete-bare");
+		
 	}
-
-	void draw(GLulong time){
-
-		MVP = Projection * View * Model;
-		glUniformMatrix4fv(ObjectMatrixID, 1, GL_FALSE, &MVP[0][0]);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glBindVertexArray(vao[0]);
-		glDrawArrays(GL_TRIANGLES, 0, vVecs.size());
-
-	}
-
+	void animate(){}
 };
 
 class bridge : public drawable {
 
-private:
-	GLuint textureID;
-	vector<glm::vec3> vVecs;
-	vector<glm::vec2> vtVecs;
-	vector<glm::vec3> nVecs;
-	glm::mat4 Model;
-	GLuint vao[1], vbo[3];
 public:
-	void init(vector<glm::vec3> vertices, vector<glm::vec3> normals, vector<glm::vec2> uvs){
-		vVecs = vertices;
-		vtVecs = uvs;
-		nVecs = normals;
+	void setTexture(){
+		
 
 		textureID = lookupTexture("bulkhead");
-		Model = glm::mat4(1.f);
-
-		glGenBuffers(3, vbo);
-		glGenVertexArrays(1, vao);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-		glBufferData(GL_ARRAY_BUFFER, vVecs.size() * sizeof(glm::vec3), &vVecs[0], GL_STATIC_DRAW);
-		glBindVertexArray(vao[0]);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
 		
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-		glBufferData(GL_ARRAY_BUFFER, vtVecs.size() * sizeof(glm::vec2), &vtVecs[0], GL_STATIC_DRAW);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (const GLvoid*)0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
-		glBufferData(GL_ARRAY_BUFFER, nVecs.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW); 
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
 	}
-
-	void draw(GLulong time){
-
-		MVP = Projection * View * Model;
-		glUniformMatrix4fv(ObjectMatrixID, 1, GL_FALSE, &MVP[0][0]);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glBindVertexArray(vao[0]);
-		glDrawArrays(GL_TRIANGLES, 0, vVecs.size());
-
-	}
+	void animate(){}
 
 };
 
 class smallBuilding : public drawable {
 
-private:
-	GLuint textureID;
-	vector<glm::vec3> vVecs;
-	vector<glm::vec2> vtVecs;
-	vector<glm::vec3> nVecs;
-	glm::mat4 Model;
-	GLuint vao[1], vbo[3];
+
 public:
-	void init(vector<glm::vec3> vertices, vector<glm::vec3> normals, vector<glm::vec2> uvs){
-		vVecs = vertices;
-		vtVecs = uvs;
-		nVecs = normals;
+	void setTexture(){
 
 		textureID = lookupTexture("fibre-glass");
-		Model = glm::mat4(1.f);
-
-		glGenBuffers(3, vbo);
-		glGenVertexArrays(1, vao);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-		glBufferData(GL_ARRAY_BUFFER, vVecs.size() * sizeof(glm::vec3), &vVecs[0], GL_STATIC_DRAW);
-		glBindVertexArray(vao[0]);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
 		
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-		glBufferData(GL_ARRAY_BUFFER, vtVecs.size() * sizeof(glm::vec2), &vtVecs[0], GL_STATIC_DRAW);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (const GLvoid*)0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
-		glBufferData(GL_ARRAY_BUFFER, nVecs.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW); 
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
 	}
-
-	void draw(GLulong time){
-
-		MVP = Projection * View * Model;
-		glUniformMatrix4fv(ObjectMatrixID, 1, GL_FALSE, &MVP[0][0]);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glBindVertexArray(vao[0]);
-		glDrawArrays(GL_TRIANGLES, 0, vVecs.size());
-
-	}
-
+	void animate(){}
 };
 
 class radar : public drawable {
 
-private:
-	GLuint textureID;
-	vector<glm::vec3> vVecs;
-	vector<glm::vec2> vtVecs;
-	vector<glm::vec3> nVecs;
-	glm::mat4 Model;
-	GLuint vao[1], vbo[3];
 public:
-	void init(vector<glm::vec3> vertices, vector<glm::vec3> normals, vector<glm::vec2> uvs){
-		vVecs = vertices;
-		vtVecs = uvs;
-		nVecs = normals;
+	void setTexture(){
 
 		textureID = lookupTexture("tiles");
-		Model = glm::mat4(1.f);
-
-		glGenBuffers(3, vbo);
-		glGenVertexArrays(1, vao);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-		glBufferData(GL_ARRAY_BUFFER, vVecs.size() * sizeof(glm::vec3), &vVecs[0], GL_STATIC_DRAW);
-		glBindVertexArray(vao[0]);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
-		
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-		glBufferData(GL_ARRAY_BUFFER, vtVecs.size() * sizeof(glm::vec2), &vtVecs[0], GL_STATIC_DRAW);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (const GLvoid*)0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
-		glBufferData(GL_ARRAY_BUFFER, nVecs.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW); 
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
-	}
-
-	void draw(GLulong time){
-
-		MVP = Projection * View * Model;
-		glUniformMatrix4fv(ObjectMatrixID, 1, GL_FALSE, &MVP[0][0]);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glBindVertexArray(vao[0]);
-		glDrawArrays(GL_TRIANGLES, 0, vVecs.size());
 
 	}
-
+	void animate(){}
 };
 
 class dishSupport : public drawable {
 
-private:
-	GLuint textureID;
-	vector<glm::vec3> vVecs;
-	vector<glm::vec2> vtVecs;
-	vector<glm::vec3> nVecs;
-	glm::mat4 Model;
-	GLuint vao[1], vbo[3];
 public:
-	void init(vector<glm::vec3> vertices, vector<glm::vec3> normals, vector<glm::vec2> uvs){
-		vVecs = vertices;
-		vtVecs = uvs;
-		nVecs = normals;
+	void setTexture(){
 
 		textureID = lookupTexture("concrete-bare");
-		Model = glm::mat4(1.f);
-
-		glGenBuffers(3, vbo);
-		glGenVertexArrays(1, vao);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-		glBufferData(GL_ARRAY_BUFFER, vVecs.size() * sizeof(glm::vec3), &vVecs[0], GL_STATIC_DRAW);
-		glBindVertexArray(vao[0]);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
-		
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-		glBufferData(GL_ARRAY_BUFFER, vtVecs.size() * sizeof(glm::vec2), &vtVecs[0], GL_STATIC_DRAW);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (const GLvoid*)0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
-		glBufferData(GL_ARRAY_BUFFER, nVecs.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW); 
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
-	}
-
-	void draw(GLulong time){
-
-		MVP = Projection * View * Model;
-		glUniformMatrix4fv(ObjectMatrixID, 1, GL_FALSE, &MVP[0][0]);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glBindVertexArray(vao[0]);
-		glDrawArrays(GL_TRIANGLES, 0, vVecs.size());
 
 	}
-
+	void animate(){}
 };
 
 class dish : public drawable {
 
-private:
-	GLuint textureID;
-	vector<glm::vec3> vVecs;
-	vector<glm::vec2> vtVecs;
-	vector<glm::vec3> nVecs;
-	glm::mat4 Model;
-	GLuint vao[1], vbo[3];
 public:
-	void init(vector<glm::vec3> vertices, vector<glm::vec3> normals, vector<glm::vec2> uvs){
-		vVecs = vertices;
-		vtVecs = uvs;
-		nVecs = normals;
+	void setTexture(){
 
 		textureID = lookupTexture("scratch-metal");
-		Model = glm::mat4(1.f);
-
-		glGenBuffers(3, vbo);
-		glGenVertexArrays(1, vao);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-		glBufferData(GL_ARRAY_BUFFER, vVecs.size() * sizeof(glm::vec3), &vVecs[0], GL_STATIC_DRAW);
-		glBindVertexArray(vao[0]);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
 		
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-		glBufferData(GL_ARRAY_BUFFER, vtVecs.size() * sizeof(glm::vec2), &vtVecs[0], GL_STATIC_DRAW);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (const GLvoid*)0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
-		glBufferData(GL_ARRAY_BUFFER, nVecs.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW); 
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
 	}
-
-	void draw(GLulong time){
-
-		MVP = Projection * View * Model;
-		glUniformMatrix4fv(ObjectMatrixID, 1, GL_FALSE, &MVP[0][0]);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glBindVertexArray(vao[0]);
-		glDrawArrays(GL_TRIANGLES, 0, vVecs.size());
-
-	}
-
+	void animate(){}
 };
 
 class aerial : public drawable {
 
-private:
-	GLuint textureID;
-	vector<glm::vec3> vVecs;
-	vector<glm::vec2> vtVecs;
-	vector<glm::vec3> nVecs;
-	glm::mat4 Model;
-	GLuint vao[1], vbo[3];
 public:
-	void init(vector<glm::vec3> vertices, vector<glm::vec3> normals, vector<glm::vec2> uvs){
-		vVecs = vertices;
-		vtVecs = uvs;
-		nVecs = normals;
+	void setTexture(){
 
 		textureID = lookupTexture("metal-white");
-		Model = glm::mat4(1.f);
-
-		glGenBuffers(3, vbo);
-		glGenVertexArrays(1, vao);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-		glBufferData(GL_ARRAY_BUFFER, vVecs.size() * sizeof(glm::vec3), &vVecs[0], GL_STATIC_DRAW);
-		glBindVertexArray(vao[0]);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
-		
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-		glBufferData(GL_ARRAY_BUFFER, vtVecs.size() * sizeof(glm::vec2), &vtVecs[0], GL_STATIC_DRAW);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (const GLvoid*)0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
-		glBufferData(GL_ARRAY_BUFFER, nVecs.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW); 
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
 	}
-
-	void draw(GLulong time){
-
-		MVP = Projection * View * Model;
-		glUniformMatrix4fv(ObjectMatrixID, 1, GL_FALSE, &MVP[0][0]);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glBindVertexArray(vao[0]);
-		glDrawArrays(GL_TRIANGLES, 0, vVecs.size());
-
-	}
-
+	void animate(){}
 };
 
 class shipcone : public drawable {
 
-private:
-	GLuint textureID;
-	vector<glm::vec3> vVecs;
-	vector<glm::vec2> vtVecs;
-	vector<glm::vec3> nVecs;
-	glm::mat4 Model;
-	GLuint vao[1], vbo[3];
 public:
-	void init(vector<glm::vec3> vertices, vector<glm::vec3> normals, vector<glm::vec2> uvs){
-		vVecs = vertices;
-		vtVecs = uvs;
-		nVecs = normals;
-
+	void setTexture(){
 		textureID = lookupTexture("metal-red");
-		Model = glm::mat4(1.f);
-
-		glGenBuffers(3, vbo);
-		glGenVertexArrays(1, vao);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-		glBufferData(GL_ARRAY_BUFFER, vVecs.size() * sizeof(glm::vec3), &vVecs[0], GL_STATIC_DRAW);
-		glBindVertexArray(vao[0]);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
-		
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-		glBufferData(GL_ARRAY_BUFFER, vtVecs.size() * sizeof(glm::vec2), &vtVecs[0], GL_STATIC_DRAW);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (const GLvoid*)0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
-		glBufferData(GL_ARRAY_BUFFER, nVecs.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW); 
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
 	}
-
-	void draw(GLulong time){
-
-		MVP = Projection * View * Model;
-		glUniformMatrix4fv(ObjectMatrixID, 1, GL_FALSE, &MVP[0][0]);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glBindVertexArray(vao[0]);
-		glDrawArrays(GL_TRIANGLES, 0, vVecs.size());
-
-	}
-
+	void animate(){}
 };
 
 class shipfin : public drawable {
 
-private:
-	GLuint textureID;
-	vector<glm::vec3> vVecs;
-	vector<glm::vec2> vtVecs;
-	vector<glm::vec3> nVecs;
-	glm::mat4 Model;
-	GLuint vao[1], vbo[3];
 public:
-	void init(vector<glm::vec3> vertices, vector<glm::vec3> normals, vector<glm::vec2> uvs){
-		vVecs = vertices;
-		vtVecs = uvs;
-		nVecs = normals;
-
+	void setTexture(){
 		textureID = lookupTexture("metal-red");
-		Model = glm::mat4(1.f);
-
-		glGenBuffers(3, vbo);
-		glGenVertexArrays(1, vao);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-		glBufferData(GL_ARRAY_BUFFER, vVecs.size() * sizeof(glm::vec3), &vVecs[0], GL_STATIC_DRAW);
-		glBindVertexArray(vao[0]);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
-		
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-		glBufferData(GL_ARRAY_BUFFER, vtVecs.size() * sizeof(glm::vec2), &vtVecs[0], GL_STATIC_DRAW);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (const GLvoid*)0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
-		glBufferData(GL_ARRAY_BUFFER, nVecs.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW); 
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
-	}
-
-	void draw(GLulong time){
-
-		MVP = Projection * View * Model;
-		glUniformMatrix4fv(ObjectMatrixID, 1, GL_FALSE, &MVP[0][0]);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glBindVertexArray(vao[0]);
-		glDrawArrays(GL_TRIANGLES, 0, vVecs.size());
 
 	}
-
+	void animate(){}
 };
 
 class shipbody : public drawable {
 
-private:
-	GLuint textureID;
-	vector<glm::vec3> vVecs;
-	vector<glm::vec2> vtVecs;
-	vector<glm::vec3> nVecs;
-	glm::mat4 Model;
-	GLuint vao[1], vbo[3];
 public:
-	void init(vector<glm::vec3> vertices, vector<glm::vec3> normals, vector<glm::vec2> uvs){
-		vVecs = vertices;
-		vtVecs = uvs;
-		nVecs = normals;
-
+	void setTexture(){
 		textureID = lookupTexture("metal-white");
-		Model = glm::mat4(1.f);
-
-		glGenBuffers(3, vbo);
-		glGenVertexArrays(1, vao);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-		glBufferData(GL_ARRAY_BUFFER, vVecs.size() * sizeof(glm::vec3), &vVecs[0], GL_STATIC_DRAW);
-		glBindVertexArray(vao[0]);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
-		
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-		glBufferData(GL_ARRAY_BUFFER, vtVecs.size() * sizeof(glm::vec2), &vtVecs[0], GL_STATIC_DRAW);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (const GLvoid*)0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
-		glBufferData(GL_ARRAY_BUFFER, nVecs.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW); 
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
 	}
-
-	void draw(GLulong time){
-
-		MVP = Projection * View * Model;
-		glUniformMatrix4fv(ObjectMatrixID, 1, GL_FALSE, &MVP[0][0]);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glBindVertexArray(vao[0]);
-		glDrawArrays(GL_TRIANGLES, 0, vVecs.size());
-
-	}
-
+	void animate(){}
 };
 
 class shipexhaust : public drawable {
-
-private:
-	GLuint textureID;
-	vector<glm::vec3> vVecs;
-	vector<glm::vec2> vtVecs;
-	vector<glm::vec3> nVecs;
-	glm::mat4 Model;
-	GLuint vao[1], vbo[3];
 public:
-	void init(vector<glm::vec3> vertices, vector<glm::vec3> normals, vector<glm::vec2> uvs){
-		vVecs = vertices;
-		vtVecs = uvs;
-		nVecs = normals;
-
-		textureID = lookupTexture("metal-floor");
-		Model = glm::mat4(1.f);
-
-		glGenBuffers(3, vbo);
-		glGenVertexArrays(1, vao);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-		glBufferData(GL_ARRAY_BUFFER, vVecs.size() * sizeof(glm::vec3), &vVecs[0], GL_STATIC_DRAW);
-		glBindVertexArray(vao[0]);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
+	void setTexture(){
 		
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-		glBufferData(GL_ARRAY_BUFFER, vtVecs.size() * sizeof(glm::vec2), &vtVecs[0], GL_STATIC_DRAW);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (const GLvoid*)0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
-		glBufferData(GL_ARRAY_BUFFER, nVecs.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW); 
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
+		textureID = lookupTexture("metal-floor");
+		
 	}
-
-	void draw(GLulong time){
-
-		MVP = Projection * View * Model;
-		glUniformMatrix4fv(ObjectMatrixID, 1, GL_FALSE, &MVP[0][0]);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glBindVertexArray(vao[0]);
-		glDrawArrays(GL_TRIANGLES, 0, vVecs.size());
-
-	}
-
+	void animate(){}
 };
 
 class launchTower : public drawable {
 
-private:
-	GLuint textureID;
-	vector<glm::vec3> vVecs;
-	vector<glm::vec2> vtVecs;
-	vector<glm::vec3> nVecs;
-	glm::mat4 Model;
-	GLuint vao[1], vbo[3];
 public:
-	void init(vector<glm::vec3> vertices, vector<glm::vec3> normals, vector<glm::vec2> uvs){
-		vVecs = vertices;
-		vtVecs = uvs;
-		nVecs = normals;
-
+	void setTexture(){
 		textureID = lookupTexture("concrete-plate");
-		Model = glm::mat4(1.f);
-
-		glGenBuffers(3, vbo);
-		glGenVertexArrays(1, vao);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-		glBufferData(GL_ARRAY_BUFFER, vVecs.size() * sizeof(glm::vec3), &vVecs[0], GL_STATIC_DRAW);
-		glBindVertexArray(vao[0]);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
-		
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-		glBufferData(GL_ARRAY_BUFFER, vtVecs.size() * sizeof(glm::vec2), &vtVecs[0], GL_STATIC_DRAW);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (const GLvoid*)0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
-		glBufferData(GL_ARRAY_BUFFER, nVecs.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW); 
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
 	}
-
-	void draw(GLulong time){
-
-		MVP = Projection * View * Model;
-		glUniformMatrix4fv(ObjectMatrixID, 1, GL_FALSE, &MVP[0][0]);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glBindVertexArray(vao[0]);
-		glDrawArrays(GL_TRIANGLES, 0, vVecs.size());
-
-	}
-
+	void animate(){}
 };
 
 class launchpad : public drawable {
 
-private:
-	GLuint textureID;
-	vector<glm::vec3> vVecs;
-	vector<glm::vec2> vtVecs;
-	vector<glm::vec3> nVecs;
-	glm::mat4 Model;
-	GLuint vao[1], vbo[3];
 public:
-	void init(vector<glm::vec3> vertices, vector<glm::vec3> normals, vector<glm::vec2> uvs){
-		vVecs = vertices;
-		vtVecs = uvs;
-		nVecs = normals;
-
-		textureID = lookupTexture("tiles");
-		Model = glm::mat4(1.f);
-
-		glGenBuffers(3, vbo);
-		glGenVertexArrays(1, vao);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-		glBufferData(GL_ARRAY_BUFFER, vVecs.size() * sizeof(glm::vec3), &vVecs[0], GL_STATIC_DRAW);
-		glBindVertexArray(vao[0]);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
+	void setTexture(){
 		
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-		glBufferData(GL_ARRAY_BUFFER, vtVecs.size() * sizeof(glm::vec2), &vtVecs[0], GL_STATIC_DRAW);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (const GLvoid*)0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
-		glBufferData(GL_ARRAY_BUFFER, nVecs.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW); 
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
+		textureID = lookupTexture("tiles");
+		
 	}
-
-	void draw(GLulong time){
-
-		MVP = Projection * View * Model;
-		glUniformMatrix4fv(ObjectMatrixID, 1, GL_FALSE, &MVP[0][0]);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glBindVertexArray(vao[0]);
-		glDrawArrays(GL_TRIANGLES, 0, vVecs.size());
-
-	}
-
+	void animate(){}
 };
 
 class skybox : public drawable {
 
-private:
-	GLuint textureID;
-	vector<glm::vec3> vVecs;
-	vector<glm::vec2> vtVecs;
-	vector<glm::vec3> nVecs;
-	glm::mat4 Model;
-	GLuint vao[1], vbo[3];
 public:
-	void init(vector<glm::vec3> vertices, vector<glm::vec3> normals, vector<glm::vec2> uvs){
-		vVecs = vertices;
-		vtVecs = uvs;
-		nVecs = normals;
+	void setTexture(){
 
 		textureID = lookupTexture("tiles");
-		Model = glm::mat4(1.f);
-
-		glGenBuffers(3, vbo);
-		glGenVertexArrays(1, vao);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-		glBufferData(GL_ARRAY_BUFFER, vVecs.size() * sizeof(glm::vec3), &vVecs[0], GL_STATIC_DRAW);
-		glBindVertexArray(vao[0]);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
-		
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-		glBufferData(GL_ARRAY_BUFFER, vtVecs.size() * sizeof(glm::vec2), &vtVecs[0], GL_STATIC_DRAW);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (const GLvoid*)0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
-		glBufferData(GL_ARRAY_BUFFER, nVecs.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW); 
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
 	}
-
-	void draw(GLulong time){
-
-		MVP = Projection * View * Model;
-		glUniformMatrix4fv(ObjectMatrixID, 1, GL_FALSE, &MVP[0][0]);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glBindVertexArray(vao[0]);
-		glDrawArrays(GL_TRIANGLES, 0, vVecs.size());
-
-	}
-
+	void animate(){}
 };
 
 GLuint setupShaders(GLchar * vertexsource, GLchar * fragmentsource, GLuint vertexshader, GLuint fragmentshader, char * vertFile, char * fragFile) {
