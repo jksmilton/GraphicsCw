@@ -1,0 +1,2 @@
+Blender was used for model creation.
+Textures were provided by cgtextures.com.
